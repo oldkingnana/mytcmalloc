@@ -1,0 +1,11 @@
+{
+  "livePreview": false,
+  "readableLineLength": false,
+  "strictLineBreaks": true,
+  "showLineNumber": true,
+  "spellcheck": false,
+  "autoPairBrackets": false,
+  "autoPairMarkdown": false,
+  "smartIndentList": false,
+  "useTab": true
+}
