@@ -11,7 +11,7 @@
 
 namespace oldking
 {
-	#define MMAP_LEN 64
+	#define MMAP_LEN 1024*1024
 
 	template<class T>
 	class ObjectPool
@@ -22,8 +22,9 @@ namespace oldking
 		, free_list_(nullptr)
 		, free_size_(0)
 		, len_(0)
+		, T_size_(sizeof(T) > sizeof(void*) ? sizeof(T) : sizeof(void*))
 		{
-			len_ = ((MMAP_LEN / sizeof(T)) + 1) * sizeof(T);
+			len_ = ((MMAP_LEN / T_size_) + 1) * T_size_;
 		}
 
 		~ObjectPool()
@@ -31,13 +32,13 @@ namespace oldking
 
 		T* New()
 		{
-			MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new begin");
+			// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new begin");
 			T* pobj = nullptr;
 			if(free_list_ == nullptr)
 			{
-				if(free_size_ < sizeof(T))	
+				if(free_size_ < T_size_)	
 				{
-					MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "mmap!");
+					// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "mmap!");
 				  	memory_ = (char*)mmap(
 										  NULL,
 										  len_,
@@ -51,30 +52,30 @@ namespace oldking
 						throw std::bad_alloc();
 				}
 
-				MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from memory_!");
-				MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "free_size_: " + std::to_string(free_size_));
+				// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from memory_!");
+				// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "free_size_: " + std::to_string(free_size_));
 				pobj = (T*)memory_;
-				memory_ += sizeof(T);
-				free_size_ -= sizeof(T);
+				memory_ += T_size_;
+				free_size_ -= T_size_;
 			}
 			else 
 			{
-				MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from free_list_!");
+				// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from free_list_!");
 				pobj = (T*)free_list_;
 				free_list_ = *((void**)pobj);
 			}
 			new(pobj)T();
-			MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new finish, new obj!");
+			// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new finish, new obj!");
 			return pobj;
 		}	
 
 		void Delete(T* obj)
 		{
-			MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete begin");
+			// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete begin");
 			obj->~T();
 			*((void**)obj) = free_list_;
 			free_list_ = obj;
-			MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete finish");
+			// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete finish");
 		}
 
 		size_t FreeSize()
@@ -87,6 +88,7 @@ namespace oldking
 		void* free_list_;
 		size_t free_size_;
 		size_t len_;
+		size_t T_size_;
 	};
 }
 
