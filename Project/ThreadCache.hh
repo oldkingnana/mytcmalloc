@@ -34,6 +34,8 @@ namespace oldking
 
 		void* pop();
 
+		bool is_empty() { return header_ == nullptr; } 
+
 	private:
 		void* header_;
 	};
@@ -52,7 +54,9 @@ namespace oldking
 
 		void* pop(uint32_t size);
 
-	//private:
+		bool find(uint32_t size);
+
+	private:
 		static int16_t table_pos(uint32_t size);
 
 	private:
@@ -66,27 +70,25 @@ namespace oldking
 		
 		ThreadCache()
 		: memory_(nullptr)
-		, free_table_(TC_BUCKET_NUM, nullptr)
+		, FT_()
 		, free_size_(0)
 		{}
 
 		~ThreadCache()
 		{}
 
-		void* New(uint32_t size);
+		void* allocate(uint32_t size);
 
-		void Delete(void* obj, uint32_t size);
+		void deallocate(void* obj, uint32_t size);
 
 		uint32_t FreeSize()
 		{
 			return free_size_;
 		}
-	
-		uint16_t table_pos(uint32_t size);
 
 	private:
 		char* memory_;
-		std::vector<pfree_list> free_table_;
+		FreeTable FT_;
 		uint32_t free_size_;
 	};
 }

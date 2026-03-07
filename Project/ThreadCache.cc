@@ -34,6 +34,11 @@ void* oldking::FreeTable::pop(uint32_t size)
 {
 	return table_[table_pos(size)].pop();
 }
+		
+bool oldking::FreeTable::find(uint32_t size)
+{
+	return !(table_[table_pos(size)].is_empty());
+}
 
 int16_t oldking::FreeTable::table_pos(uint32_t size)
 {
@@ -80,12 +85,11 @@ int16_t oldking::FreeTable::table_pos(uint32_t size)
 
 // ==================ThreadCache===================
 
-void* oldking::ThreadCache::New(uint32_t size)
+void* oldking::ThreadCache::allocate(uint32_t size)
 {
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new begin");
-	uint16_t pos = table_pos(size);
 	void* pobj = nullptr;
-	if(free_table_[pos] == nullptr)
+	if(!FT_.find(size))
 	{
 		if(free_size_ < size)	
 		{
@@ -112,24 +116,16 @@ void* oldking::ThreadCache::New(uint32_t size)
 	else 
 	{
 		// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from free_list_!");
-		pobj = (void*)free_table_[pos];
-		free_table_[pos] = *((void**)pobj);
+		pobj = FT_.pop(size);
 	}
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new finish, new obj!");
 	return pobj;
 }	
 
-void oldking::ThreadCache::Delete(void* obj, uint32_t size)
+void oldking::ThreadCache::deallocate(void* obj, uint32_t size)
 {
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete begin");
-	uint16_t pos = table_pos(size);
-	*((void**)obj) = free_table_[pos];
-	free_table_[pos] = obj;
+	FT_.push(obj, size);
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete finish");
 }
 
-uint16_t oldking::ThreadCache::table_pos(uint32_t size)
-{
-	(void)size;
-	return 0;
-}
