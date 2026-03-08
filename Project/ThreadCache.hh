@@ -10,6 +10,7 @@ namespace oldking
 	const uint32_t TC_BUCKET_NUM = 12;  // after every 12 buckets, the alignment will double
 	const uint32_t TC_BASE_ALIGNMENT = 8;
 	const uint32_t TC_MAX_BLOCK = 256*1024;
+	const uint32_t TC_BUCKET_NUM_TOTAL = 12*12;  // after every 12 buckets, the alignment will double
 
 	//static const std::unordered_map<uint32_t, uint32_t> AlignmentList = 
 	//	{{96, 8}, {288, 16}, {672, 32}, {1440, 64}, {2976, 128}, {6048, 256}, {12192, 512}, {24480, 1024}, {49056, 2048}, {98208, 4096}, {196512, 8192}, {262144, 16384}};
@@ -43,8 +44,8 @@ namespace oldking
 	class FreeTable
 	{
 	public:
-		FreeTable()
-		: table_()
+		FreeTable(uint16_t num)
+		: table_(num)
 		{}
 
 		~FreeTable()
@@ -56,7 +57,7 @@ namespace oldking
 
 		bool find(uint32_t size);
 
-	private:
+	// private:
 		static int16_t table_pos(uint32_t size);
 
 	private:
@@ -70,7 +71,7 @@ namespace oldking
 		
 		ThreadCache()
 		: memory_(nullptr)
-		, FT_()
+		, FT_(TC_BUCKET_NUM_TOTAL)
 		, free_size_(0)
 		{}
 
