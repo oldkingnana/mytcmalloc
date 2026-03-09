@@ -2,6 +2,8 @@
 
 #include "myeasylog.hpp"
 #include <sys/mman.h>
+#include <pthread.h>
+
 // #include <unordered_map>
 
 namespace oldking
@@ -80,7 +82,7 @@ namespace oldking
 
 		void* allocate(uint32_t size);
 
-		void deallocate(void* obj, uint32_t size);
+		bool deallocate(void* obj, uint32_t size);
 
 		uint32_t FreeSize()
 		{
@@ -92,5 +94,7 @@ namespace oldking
 		FreeTable FT_;
 		uint32_t free_size_;
 	};
+
+	static __thread ThreadCache* pthreadcache = nullptr;	
 }
 

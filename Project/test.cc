@@ -1,5 +1,15 @@
 #include "ThreadCache.hh"
+#include "alloc.hh"
+#include "myexception.hpp"
+
+#include <ctime>
+#include <random>
+#include <vector>
+#include <map>
+#include <cstdlib>
 #include <iterator>
+#include <unistd.h>
+#include <pthread.h>
 
 struct node_l
 {
@@ -74,12 +84,112 @@ void func()
 	std::cout << "nullptr" << std::endl;
 }
 
+void func2()
+{
+	//std::list<void*> list;
+
+	//for(int i = 0; i < 10; i++)
+	//	list.push_front(oldking::alloc(10));
+
+	//for(int i = 0; i < 10; i++)
+	//{
+	//	oldking::dealloc(list.front(), 10);
+	//	list.pop_front();
+	//}
+
+	srandom(std::time(nullptr));
+	
+	std::list<std::pair<void*, uint32_t>> memory_list;
+
+	for(int i = 1, flag = 0; i <= 100000; i++) 
+	{
+		auto r = random() / oldking::TC_MAX_BLOCK;
+		void* p = oldking::alloc(r);
+		memory_list.emplace_front(p, r);
+		if(flag != i / 10000)
+		{
+			std::cout << "i == " << i << std::endl;
+			flag = i / 10000;
+			sleep(4);
+		}
+	}
+
+	for(int i = 1, flag = 0; !memory_list.empty(); i++)
+	{
+		oldking::dealloc(memory_list.front().first, memory_list.front().second);
+		memory_list.pop_front();
+
+		if(flag != i / 10000)
+		{
+			std::cout << "j == " << i << std::endl;
+			flag = i / 10000;
+			sleep(4);
+		}
+	}
+}
+
+void* threadfunc(void* arg)
+{
+	(void)arg;
+
+	auto tid = pthread_self();
+	
+	srandom(std::time(nullptr));
+	
+	std::list<std::pair<void*, uint32_t>> memory_list;
+
+	for(int i = 1; i <= 100; i++) 
+	{
+		auto r = random() / oldking::TC_MAX_BLOCK;
+		void* p = oldking::alloc(r);
+		memory_list.emplace_front(p, r);
+		std::cout << "tid: " << tid << "  alloc " << r << "bytes" << std::endl;
+	}
+
+	for(; !memory_list.empty();)
+	{
+		oldking::dealloc(memory_list.front().first, memory_list.front().second);
+		std::cout << "tid: " << tid << "  dealloc " << memory_list.front().second << "bytes" << std::endl;
+		memory_list.pop_front();
+	}
+	
+	return {};
+}
+
+void func3()
+{
+	pthread_t newthread1;
+	int ret1 = pthread_create(&newthread1, NULL, threadfunc, NULL);
+
+	if(ret1 != 0)
+		std::cout << "create thread1 err" << std::endl;
+
+
+	pthread_t newthread2;
+	int ret2 = pthread_create(&newthread2, NULL, threadfunc, NULL);
+
+	if(ret2 != 0)
+		std::cout << "create thread2 err" << std::endl;
+
+	pthread_join(newthread1, nullptr);
+	pthread_join(newthread2, nullptr);
+}
+
 int main()
 {
-	try {
-		func();
-	} catch (...) {
-		std::cout << "err" << std::endl;	
+	try 
+	{
+		// func();
+		// func2();	
+		func3();
+	}
+	catch (oldking::my_exception ex)
+	{
+		std::cout << ex.what() << std::endl;
+	}
+	catch (...) 
+	{
+		std::cout << "unknow err" << std::endl;	
 	}
 
 	return 0;

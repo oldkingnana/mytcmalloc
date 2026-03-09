@@ -1,6 +1,9 @@
 #include "ThreadCache.hh"
+#include "myexception.hpp"
+
 #include <cmath>
 #include <new>
+#include <string>
 
 // ==================FreeList====================
 
@@ -25,7 +28,10 @@ bool oldking::FreeTable::push(void* pointer, uint32_t size)
 {
 	int16_t pos = table_pos(size);
 	if(pos == -1)
+	{
+		oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)pointer) + " size == " + std::to_string(size));
 		return false;
+	}
 
 	table_[pos].push(pointer);
 	return true;
@@ -144,11 +150,30 @@ void* oldking::ThreadCache::allocate(uint32_t size)
 	return pobj;
 }	
 
-void oldking::ThreadCache::deallocate(void* obj, uint32_t size)
+bool oldking::ThreadCache::deallocate(void* obj, uint32_t size)
 {
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete begin");
-	uint32_t real_size = ((FT_.table_pos(size) / TC_BUCKET_NUM) + 1) * TC_BASE_ALIGNMENT;
-	FT_.push(obj, real_size);
+	uint32_t time = 0;
+    uint32_t begin = 1, end = begin + (TC_BUCKET_NUM * pow(2, time) * TC_BASE_ALIGNMENT);
+
+    while(size > 96 && begin < TC_MAX_BLOCK)
+    {
+        time++;
+        begin = end;
+        end = begin + (TC_BUCKET_NUM * pow(2, time) * TC_BASE_ALIGNMENT);
+        if(begin <= size && size < end)
+                break;
+    }
+	
+	uint32_t real_size = begin - 1 + (pow(2, time) * TC_BASE_ALIGNMENT);
+	while(real_size < size)
+	{
+		real_size += (pow(2, time) * TC_BASE_ALIGNMENT);
+		if(real_size > TC_MAX_BLOCK)
+			throw std::bad_alloc();
+	}
+	
+	return FT_.push(obj, real_size);
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete finish");
 }
 
