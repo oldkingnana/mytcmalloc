@@ -2,6 +2,7 @@
 
 #include "myexception.hpp"
 #include "global.hh"
+#include "common_struct.hpp"
 
 #include <string>
 #include <stdint.h>
@@ -10,42 +11,16 @@
 
 namespace oldking 
 {
-
-	template <typename T>
-	class FreeTable
+	// bad
+	class SizeIndexMapper
 	{
 	public:
-		FreeTable(uint16_t num)
-		: table_(num)
+		SizeIndexMapper()
 		{}
 
-		~FreeTable()
+		~SizeIndexMapper()
 		{}
 
-		bool push(void* pointer, uint32_t size)
-		{
-			int16_t pos = table_pos(size);
-			if(pos == -1)
-			{
-				oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)pointer) + " size == " + std::to_string(size));
-				return false;
-			}
-		
-			table_[pos].push(pointer);
-			return true;
-		}
-
-		void* pop(uint32_t size)
-		{
-			return table_[table_pos(size)].pop();
-		}
-
-		bool find(uint32_t size)
-		{
-			return !(table_[table_pos(size)].is_empty());
-		}
-
-	// private:
 		static int16_t table_pos(uint32_t size)
 		{
 			int16_t pos = -1;
@@ -88,9 +63,81 @@ namespace oldking
 		
 			return pos;
 		}
+	};
+
+	class FL_FreeTable : public SizeIndexMapper
+	{
+	public:
+		FL_FreeTable(uint16_t num)
+		: table_(num)
+		{}
+
+		~FL_FreeTable()
+		{}
+
+		bool push(void* pointer, uint32_t size)
+		{
+			int16_t pos = table_pos(size);
+			if(pos == -1)
+			{
+				oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)pointer) + " size == " + std::to_string(size));
+				return false;
+			}
+		
+			table_[pos].push(pointer);
+			return true;
+		}
+
+		void* pop(uint32_t size)
+		{
+			return table_[table_pos(size)].pop();
+		}
+
+		bool find(uint32_t size)
+		{
+			return !(table_[table_pos(size)].is_empty());
+		}
 
 	private:
-		std::vector<T> table_;
+		std::vector<FreeList> table_;
+	};
+
+
+	class SL_FreeTable : public SizeIndexMapper
+	{
+	public:
+		SL_FreeTable()
+		: table_()
+		{}
+
+		~SL_FreeTable()
+		{}
+
+		bool push(Span* newspan, uint32_t size)
+		{
+			int16_t pos = table_pos(size);
+			if(pos == -1)
+			{
+				oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)newspan) + " size == " + std::to_string(size));
+				return false;
+			}
+		
+			table_[pos].push_back(newspan);
+			return true;
+		}
+
+		Span* pop(uint32_t size)
+		{
+			return table_[table_pos(size)].pop_back();
+		}
+
+		bool find(uint32_t size)
+		{
+			return !(table_[table_pos(size)].is_empty());
+		}
+
+	private:
+		std::vector<SpanList> table_;
 	};
 }
 

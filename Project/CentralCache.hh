@@ -9,14 +9,14 @@ namespace oldking
 	{
 	public:
 		CentralCache()
-		: HT_(0) // todo
+		: FT_()
 		{}
 
 		~CentralCache()
 		{}
 
 	private:
-		oldking::FreeTable<int> HT_;	
+		oldking::SL_FreeTable FT_;	
 	};
 }
 

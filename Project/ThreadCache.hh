@@ -49,7 +49,7 @@ namespace oldking
 		bool get_span(oldking::CentralCache* pCC, uint32_t size);
 
 	private:
-		FreeTable<FreeList> FT_;
+		FL_FreeTable FT_;
 		uint32_t free_size_;
 	};
 
