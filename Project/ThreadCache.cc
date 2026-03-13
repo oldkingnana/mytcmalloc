@@ -1,4 +1,6 @@
 #include "ThreadCache.hh"
+#include "CentralCache.hh"
+#include "Utils.hpp"
 #include "myexception.hpp"
 #include "global.hh"
 
@@ -33,10 +35,11 @@ void* oldking::ThreadCache::allocate(uint32_t size)
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new begin");
 	void* pobj = nullptr;
 
-	if(!FT_.find(real_size))
+	auto pos = SizeClass::table_pos(real_size);
+	if(FT_[pos].is_empty())
 	{
-		if(free_size_ < real_size)	
-		{
+		//if(free_size_ < real_size)	
+		//{
 			// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "mmap!");
 		//  	memory_ = (char*)mmap(
 		//						  NULL,
@@ -49,20 +52,32 @@ void* oldking::ThreadCache::allocate(uint32_t size)
 		//	free_size_ += TC_MAX;
 		//	if(memory_ == MAP_FAILED)
 		//		throw std::bad_alloc();
-		}
+		//}
 
 		// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from memory_!");
 		// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "free_size_: " + std::to_string(free_size_));
 		// pobj = (void*)memory_;
 		// memory_ += real_size;
-		free_size_ -= real_size;
+		// free_size_ -= real_size;
+
+	//}
+	//else 
+	//{
+	//	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from free_list_!");
+	//	pobj = FT_.pop(real_size);
+	
+
+		void* start = nullptr;
+		void* end = nullptr;
+		uint16_t obj_num = oldking::CentralCache::GetInstance().FetchRangeObj(start, end, TC_BATCH_MAX, real_size);
+
+		FT_[pos].push_list(start, end, obj_num);
 	}
-	else 
-	{
-		// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new from free_list_!");
-		pobj = FT_.pop(real_size);
-	}
-	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new finish, new obj!");
+
+	pobj = FT_[pos].pop();
+
+// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "new finish, new obj!");
+	
 	return pobj;
 }	
 
@@ -88,8 +103,23 @@ bool oldking::ThreadCache::deallocate(void* obj, uint32_t size)
 		if(real_size > FT_MAX_BLOCK)
 			throw std::bad_alloc();
 	}
+
+	auto pos = SizeClass::table_pos(real_size);
 	
-	return FT_.push(obj, real_size);
+	FT_[pos].push(obj);
+
+	// too much obj
+	if(FT_[pos].num_ > TC_BATCH_MAX * 3)
+	{
+		void* start = nullptr;
+		void* end = nullptr;
+
+		FT_[pos].pop_list(start, end, TC_BATCH_MAX);
+
+		CentralCache::GetInstance().ReleaseListToSpans(start, TC_BATCH_MAX, real_size);
+	}
+
 	// MyEasyLog::GetInstance().WriteLog(LOG_INFO, "ConcurrentMemoryPool", "delete finish");
+	return true;
 }
 

@@ -8,17 +8,18 @@
 #include <stdint.h>
 #include <vector>
 #include <cmath>
+#include <unordered_map>
 
 namespace oldking 
 {
 	// bad
-	class SizeIndexMapper
+	class SizeClass
 	{
 	public:
-		SizeIndexMapper()
+		SizeClass()
 		{}
 
-		~SizeIndexMapper()
+		~SizeClass()
 		{}
 
 		static int16_t table_pos(uint32_t size)
@@ -65,81 +66,24 @@ namespace oldking
 		}
 	};
 
-	class FL_FreeTable : public SizeIndexMapper
+
+	class PageIDMap
 	{
 	public:
-		FL_FreeTable(uint16_t num)
-		: table_(num)
-		{}
-
-		~FL_FreeTable()
-		{}
-
-		bool push(void* pointer, uint32_t size)
+		static uint32_t GetPageID(void* pointer)
 		{
-			int16_t pos = table_pos(size);
-			if(pos == -1)
-			{
-				oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)pointer) + " size == " + std::to_string(size));
-				return false;
-			}
-		
-			table_[pos].push(pointer);
-			return true;
+			(void)pointer;
+			return {}; // todo
 		}
 
-		void* pop(uint32_t size)
+		void new_index(void* pointer)
 		{
-			return table_[table_pos(size)].pop();
-		}
-
-		bool find(uint32_t size)
-		{
-			return !(table_[table_pos(size)].is_empty());
+			(void)pointer;
+			// map_.insert(); 
+			// todo
 		}
 
 	private:
-		std::vector<FreeList> table_;
-	};
-
-
-	class SL_FreeTable : public SizeIndexMapper
-	{
-	public:
-		SL_FreeTable()
-		: table_()
-		{}
-
-		~SL_FreeTable()
-		{}
-
-		bool push(Span* newspan, uint32_t size)
-		{
-			int16_t pos = table_pos(size);
-			if(pos == -1)
-			{
-				oldking::my_exception ex(std::string("FreeTable::push -> pos == -1") + " pointer == " + std::to_string((long long)newspan) + " size == " + std::to_string(size));
-				return false;
-			}
-		
-			table_[pos].push_back(newspan);
-			return true;
-		}
-
-		Span* pop(uint32_t size)
-		{
-			return table_[table_pos(size)].pop_back();
-		}
-
-		bool find(uint32_t size)
-		{
-			return !(table_[table_pos(size)].is_empty());
-		}
-
-	private:
-		std::vector<SpanList> table_;
+		inline static std::unordered_map<uint32_t, uint32_t> map_ = {};
 	};
 }
-
-
-

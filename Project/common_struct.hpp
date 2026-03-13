@@ -12,6 +12,7 @@ namespace oldking
 	public:
 		FreeList()
 		: header_(nullptr)
+		, num_(0)
 		{}
 
 		~FreeList()
@@ -21,6 +22,7 @@ namespace oldking
 		{
 			*((void**)pointer) = header_;
 			header_ = pointer;
+			num_++;
 		}
 
 		void* pop()
@@ -29,13 +31,42 @@ namespace oldking
 				return nullptr;
 			void* obj = header_;
 			header_ = *((void**)obj);
+			num_--;
 			return obj;
+		}
+
+		void push_list(void* start, void* end, uint32_t num)
+		{
+			*(void**)end = header_;
+			header_ = start;
+			num_ += num;
+		}
+
+		bool pop_list(void*& start, void*& end, uint32_t num)
+		{
+			if(num_ < num)
+				return false;
+			
+			void* cur = nullptr;
+			for(uint16_t i = 0; i < num; i++)
+			{
+				if(cur == nullptr)
+					cur = header_;
+				else 
+					cur = *(void**)cur;
+			}
+		
+			start = header_;
+			end = cur;
+
+			return true;
 		}
 
 		bool is_empty() { return header_ == nullptr; } 
 
 	public:
 		void* header_;
+		uint32_t num_;
 	};
 	
 
@@ -51,109 +82,12 @@ namespace oldking
 		, objSize_(0)
 		, objNum_(0)
 		, useCount_(0)
+		, header_()
 		, isUse_(false)
 		{}
-
-		Span(void* start_addr, uint32_t page_num, uint32_t obj_size)
-		: ID_(0)
-		, PageBegin_(static_cast<char*>(start_addr))
-		, PageNum_(page_num)
-		, prevSpan_(nullptr)
-		, nextSpan_(nullptr)
-		, objSize_(obj_size)
-		, objNum_(0)
-		, useCount_(0)
-		, FL_()
-		, isUse_(false)
-		{
-			// no warning
-			(void)ID_;
-			(void)PageBegin_;
-
-			(void)prevSpan_;
-			(void)nextSpan_;
-	
-			(void)objSize_;
-			
-			init(start_addr, page_num, obj_size);
-		}
 
 		~Span()
 		{}
-
-		void init(void* start_addr, uint32_t page_num, uint32_t obj_size)
-		{
-			PageBegin_ = static_cast<char*>(start_addr);
-			PageNum_ = page_num;
-			objSize_ = obj_size;
-		
-			init_(start_addr, page_num, obj_size);
-		}
-
-		void* pop(uint32_t num)
-		{
-			if(num > objNum_ || num == 0)
-				return nullptr;
-		
-			if(!is_init())
-				return nullptr;
-
-			void* cur = FL_.header_;
-			for(uint32_t count = 1; cur != nullptr; cur = *(void**)cur, count++)
-			{	
-				if(count == num)
-					break;
-			}
-			void* ret = FL_.header_;
-			FL_.header_ = *(void**)cur;
-
-			useCount_ += num;
-			objNum_ -= num;
-			isUse_ = true;
-
-			return ret;
-		}
-		
-		bool push(void* header, uint32_t num)
-		{
-			if(num == 0)
-				return false;
-
-			if(!is_init())
-				return false;
-
-			void* cur = header;
-			for(uint32_t count = 1; count != num; cur = *(void**)cur, count++)
-			{}
-
-			*(void**)cur = FL_.header_;
-			FL_.header_ = header;	
-
-			return true;
-		}
-
-		bool is_init() { return FL_.header_ != nullptr; }
-
-	private:
-		void init_(void* start_addr, uint32_t page_num, uint32_t obj_size)
-		{
-			char* start = (char*)start_addr;
-			uint32_t free_len = SP_PAGE_LEN * page_num;
-
-			while(free_len >= obj_size) // cut
-			{
-				void* obj = start;
-				start = (char*)obj + obj_size;
-				free_len -= obj_size;
-				FL_.push(obj);
-				objNum_ += 1;
-			}
-
-			if(free_len != 0)
-			{
-				// warning
-			}
-		}
 
 	public:
 		PageID ID_;
@@ -168,11 +102,10 @@ namespace oldking
 
 		uint16_t useCount_;
 
-		FreeList FL_;
+		void* header_;
 
 		bool isUse_;
 	};
-
 
 	class SpanList
 	{

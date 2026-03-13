@@ -1,10 +1,9 @@
 #pragma once
 
 #include "myeasylog.hpp"
-#include "FreeTable.hpp"
 #include "CentralCache.hh"
 #include "common_struct.hpp"
-
+#include "CentralCache.hh"
 
 #include <cstdint>
 #include <sys/mman.h>
@@ -30,8 +29,7 @@ namespace oldking
 		typedef void* pfree_list;
 		
 		ThreadCache()
-		: FT_(FT_BUCKET_NUM_TOTAL)
-		, free_size_(0)
+		// : free_size_(0)
 		{}
 
 		~ThreadCache()
@@ -41,16 +39,16 @@ namespace oldking
 
 		bool deallocate(void* obj, uint32_t size);
 
-		uint32_t FreeSize()
-		{
-			return free_size_;
-		}
+		//uint32_t FreeSize()
+		//{
+		//	return free_size_;
+		//}
 
 		bool get_span(oldking::CentralCache* pCC, uint32_t size);
 
 	private:
-		FL_FreeTable FT_;
-		uint32_t free_size_;
+		FreeList FT_[FT_BUCKET_NUM_TOTAL];
+		// uint32_t free_size_;
 	};
 
 	static __thread ThreadCache* pthreadcache = nullptr;	
