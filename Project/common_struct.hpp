@@ -90,17 +90,19 @@ namespace oldking
 		{}
 
 	public:
+		// ======= init in PageCache ======
 		PageID ID_;
-		char* PageBegin_;
+		void* PageBegin_;
 		uint32_t PageNum_;
 
+		// ===== init in CentralCache =====
 		Span* prevSpan_;
 		Span* nextSpan_;
 	
 		uint32_t objSize_;
 		uint32_t objNum_;
 
-		uint16_t useCount_;
+		uint32_t useCount_;
 
 		void* header_;
 

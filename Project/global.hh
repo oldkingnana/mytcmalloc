@@ -5,18 +5,26 @@
 
 namespace oldking 
 {
-	const uint32_t TC_MAX = 1024*1024*1024;
-	const uint32_t TC_BATCH_MAX = 32;
+	// ==================ThreadCache==========================
+	static const uint32_t TC_MAX = 1024*1024*1024;
+	static const uint32_t TC_BATCH_MAX = 32;
 
-	const uint32_t FT_BUCKET_NUM = 12;  // after every 12 buckets, the alignment will double
-	const uint32_t FT_BASE_ALIGNMENT = 8;
-	const uint32_t FT_MAX_BLOCK = 256*1024;
-	const uint32_t FT_BUCKET_NUM_TOTAL = 12*12;  // after every 12 buckets, the alignment will double
+	// ===================FreeTable===========================
+	static const uint32_t FT_BUCKET_NUM = 12;  // after every 12 buckets, the alignment will double
+	static const uint32_t FT_BASE_ALIGNMENT = 8;
+	static const uint32_t FT_MAX_BLOCK = 256*1024;
+	static const uint32_t FT_BUCKET_NUM_TOTAL = 12*12;  // after every 12 buckets, the alignment will double
 	
-	const uint32_t SP_PAGE_LEN = 4 * 1024;
+	// =====================Span==============================
+	static const uint32_t SP_PAGE_LEN = 4 * 1024;
 
+	// ==================ObjectPool=============================
+	static const uint32_t OP_INIT_NUM = 32;
 
-	typedef uint32_t PageID;
+	// ==================PageCache=============================
+	static const uint32_t PC_BUCKET_NUM = 129;
+
+	typedef uint64_t PageID;
 }
 
 

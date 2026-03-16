@@ -66,24 +66,40 @@ namespace oldking
 		}
 	};
 
-
-	class PageIDMap
+	class PageIDSpanMap
 	{
 	public:
-		static uint32_t GetPageID(void* pointer)
+		static PageID PointerToPageID(void* pointer)
 		{
-			(void)pointer;
-			return {}; // todo
+			return (uint64_t)pointer >> 12;	
 		}
 
-		void new_index(void* pointer)
+		Span* PointerToSpan(void* pointer)
 		{
-			(void)pointer;
-			// map_.insert(); 
-			// todo
+
+		}
+		
+		void newIndex(void* pointer, Span* span)
+		{
+
+		}
+
+		void newIndex(PageID id, Span* span)
+		{
+		
+		}
+
+		void delIndex(void* pointer)
+		{
+
+		}
+
+		void delIndex(PageID id)
+		{
+
 		}
 
 	private:
-		inline static std::unordered_map<uint32_t, uint32_t> map_ = {};
+		std::unordered_map<PageID, Span*> map_;
 	};
 }
