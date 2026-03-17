@@ -23,6 +23,9 @@ namespace oldking
 
 	// ==================PageCache=============================
 	static const uint32_t PC_BUCKET_NUM = 129;
+	static const uint32_t PC_MMAP_PAGE_NUM = 256;
+	static const uint32_t PC_SPAN_PAGE_MAX_NUM = 128;
+	static const uint32_t PC_MMAP_PAGE_NUM_TOTAL = 512 * 1024 * 1024;
 
 	typedef uint64_t PageID;
 }

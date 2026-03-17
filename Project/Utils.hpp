@@ -76,27 +76,44 @@ namespace oldking
 
 		Span* PointerToSpan(void* pointer)
 		{
-
-		}
-		
-		void newIndex(void* pointer, Span* span)
-		{
-
+			if(map_.find(PointerToPageID(pointer)) != map_.end())
+				return map_[PointerToPageID(pointer)];
+			else 
+				return nullptr;
 		}
 
-		void newIndex(PageID id, Span* span)
+		Span* PageIDToSpan(PageID id)
 		{
+			if(map_.find(id) != map_.end())
+				return map_[id];
+			else 
+				return nullptr;
+		}
 		
+		void newIndex(Span* span)
+		{
+			auto pagenum = span->PageNum_;
+			for(uint32_t i = 0; i < pagenum; i++)
+				map_.emplace(span->ID_ + i, span);
 		}
 
 		void delIndex(void* pointer)
 		{
-
+			delIndex(PointerToPageID(pointer));
+		}
+		
+		void delIndex(Span* span)
+		{
+			delIndex(span->ID_);
 		}
 
 		void delIndex(PageID id)
 		{
+			auto beginid = map_[id]->ID_;
+			auto pagenum = map_[id]->PageNum_;
 
+			for(uint32_t i = 0; i < pagenum; i++)
+				map_.erase(beginid + i);
 		}
 
 	private:

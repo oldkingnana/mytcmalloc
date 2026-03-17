@@ -42,12 +42,16 @@ namespace oldking
 		void InitSpan(Span* span, void* header, uint32_t PageNum);
 		void ResetSpan(Span* span);
 		void ClearSpan(Span* span);
+		void DelSpanfromSpanLists(Span* span);
+		Span* AllocfromSystem(uint32_t PageNum);
+		Span* newSpan_(uint32_t srcPageNum, uint32_t dstPageNum);
 
 	private:
 		ObjectPool<Span> obj_pool_;
 		SpanList span_lists_[PC_BUCKET_NUM];
-		mymutex mutexlist_[PC_BUCKET_NUM];
-	
+		// mymutex mutexlist_[PC_BUCKET_NUM];
+		mymutex mutex_;
+		PageIDSpanMap map_;	
 	};
 }
 

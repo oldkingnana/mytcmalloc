@@ -1,6 +1,8 @@
 #include "CentralCache.hh"
 #include "Utils.hpp"
 #include "common_struct.hpp"
+#include "global.hh"
+#include <cmath>
 
 uint32_t oldking::CentralCache::FetchRangeObj(void*& start, void*& end, uint32_t batch_num, uint32_t size_class)
 {
@@ -60,7 +62,7 @@ void oldking::CentralCache::ReleaseListToSpans(void* start, uint32_t batch_num, 
 		if(span == nullptr)
 			span = FindSpan(cur_obj, size_class);
 		
-		if(span->ID_ == PageIDMap::GetPageID(cur_obj))
+		if(span->ID_ == PageIDSpanMap::PointerToPageID(cur_obj))
 			InsertObj(cur_obj, span);
 		else 
 		{
@@ -75,10 +77,10 @@ void oldking::CentralCache::ReleaseListToSpans(void* start, uint32_t batch_num, 
 oldking::Span* oldking::CentralCache::GetOneSpan(uint32_t batch_num, uint32_t size_class)
 {
 	// find a spare Span 
-	SpanList SL = FT_[SizeClass::table_pos(size_class)];
+	SpanList* SL = &FT_[SizeClass::table_pos(size_class)];
 	
 	Span* max_span = nullptr;
-	for(auto it = SL.begin(); it != SL.end(); it = it->nextSpan_)
+	for(auto it = SL->begin(); it != SL->end(); it = it->nextSpan_)
 	{
 		if(max_span == nullptr)
 			max_span = it;
@@ -93,7 +95,8 @@ oldking::Span* oldking::CentralCache::GetOneSpan(uint32_t batch_num, uint32_t si
 	// try to get a Span from PageCache
 	else 
 	{
-		// ?	
+		Span* newspan = NewSpanfromPageCache(std::ceil(batch_num * size_class / SP_PAGE_LEN));
+
 		return {};
 	}
 }
@@ -104,7 +107,7 @@ oldking::Span* oldking::CentralCache::FindSpan(void* pointer, uint32_t size_clas
 	Span* cur_span = FT_[pos].begin();
 	while(cur_span != FT_[pos].end())
 	{
-		if(cur_span->ID_ == PageIDMap::GetPageID(pointer))
+		if(cur_span->ID_ == PageIDSpanMap::PointerToPageID(pointer))
 			break;
 	}
 	return cur_span;

@@ -34,6 +34,8 @@ namespace oldking
 
 		void InsertObj(void* pointer, Span* span);	
 
+		Span* NewSpanfromPageCache(uint32_t PageNum);
+
 	private:
 		SpanList FT_[FT_BUCKET_NUM_TOTAL];	
 		oldking::mymutex MutexList[FT_BUCKET_NUM_TOTAL];
