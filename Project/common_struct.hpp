@@ -59,6 +59,10 @@ namespace oldking
 			start = header_;
 			end = cur;
 
+			header_ = *(void**)end;
+			*(void**)end = nullptr;
+			num_ -= num;
+
 			return true;
 		}
 
@@ -147,7 +151,7 @@ namespace oldking
 
 		Span* pop_back()
 		{
-			assert(header_->prevSpan_);
+			assert(!is_empty());
 			Span* ret = header_->prevSpan_;
 			erase(ret);	
 			return ret;
@@ -155,7 +159,7 @@ namespace oldking
 
 		Span* pop_front()
 		{
-			assert(header_->nextSpan_);
+			assert(!is_empty());
 			Span* ret = header_->nextSpan_;
 			erase(ret);	
 			return ret;

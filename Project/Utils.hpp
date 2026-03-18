@@ -49,18 +49,18 @@ namespace oldking
 			// hardcode (shit)
 		
 			uint32_t time = 0;
-			uint32_t begin = 1, end = begin + (FT_BUCKET_NUM * pow(2, time) * FT_BASE_ALIGNMENT);
+			uint32_t begin = 1, end = begin + (FT_BUCKET_NUM * (1 << time) * FT_BASE_ALIGNMENT);
 			
 			while(size > 96 && begin < FT_MAX_BLOCK)
 			{
 				time++;
 				begin = end;
-				end = begin + (FT_BUCKET_NUM * pow(2, time) * FT_BASE_ALIGNMENT);
+				end = begin + (FT_BUCKET_NUM * (1 << time) * FT_BASE_ALIGNMENT);
 				if(begin <= size && size < end)
 					break;
 			}
 			uint32_t pos_begin = (time) * FT_BUCKET_NUM;
-			pos = pos_begin + ((size - begin == 0) ? 0 : (size - begin) / (pow(2, time) * FT_BASE_ALIGNMENT));
+			pos = pos_begin + ((size - begin == 0) ? 0 : (size - begin) / ((1 << time) * FT_BASE_ALIGNMENT));
 		
 			return pos;
 		}
