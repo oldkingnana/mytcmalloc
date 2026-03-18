@@ -2,6 +2,7 @@
 #include "common_struct.hpp"
 #include "global.hh"
 #include "Utils.hpp"
+#include "PageMap.hpp"
 
 #include <cstdint>
 #include <tuple>
@@ -34,7 +35,7 @@ oldking::Span* oldking::PageCache::newSpan(uint16_t k)
 		Span* newspan = obj_pool_.get();
 		InitSpan(newspan, memory_, PC_SPAN_PAGE_MAX_NUM);
 		span_lists_[newspan->PageNum_].push_front(newspan);
-		map_.newIndex(newspan);
+		oldking::PageMap::GetIns().newIndex(newspan);
 	}
 
 	Span* ret = newSpan_(PC_SPAN_PAGE_MAX_NUM, k);
@@ -46,14 +47,14 @@ oldking::Span* oldking::PageCache::newSpan(uint16_t k)
 oldking::Span* oldking::PageCache::newSpan_(uint32_t srcPageNum, uint32_t dstPageNum)
 {
 	Span* span_tmp = span_lists_[srcPageNum].pop_front();
-	map_.delIndex(span_tmp);
+	oldking::PageMap::GetIns().delIndex(span_tmp);
 	if(span_tmp->PageNum_ == dstPageNum)
 		return span_tmp;
 	Span* spanA;
 	Span* spanB;
 	SplitSpan(span_tmp, spanA, spanB, dstPageNum);
 	span_lists_[spanB->PageNum_].push_front(spanB);
-	map_.newIndex(spanB);
+	oldking::PageMap::GetIns().newIndex(spanB);
 	return spanA;
 }
 
@@ -68,8 +69,8 @@ void oldking::PageCache::ReleaseSpanToPageCache(oldking::Span* span)
 	for(bool flag = true; flag; )
 	{	
 		flag = false;
-		Span* leftspan = map_.PageIDToSpan(span->ID_ - 1);
-		Span* rightspan = map_.PageIDToSpan(span->ID_ + 1);
+		Span* leftspan = oldking::PageMap::GetIns().PageIDToSpan(span->ID_ - 1);
+		Span* rightspan = oldking::PageMap::GetIns().PageIDToSpan(span->ID_ + 1);
 
 		// How to lock?
 		// 1. lock 
@@ -84,7 +85,7 @@ void oldking::PageCache::ReleaseSpanToPageCache(oldking::Span* span)
 		{
 			if(leftspan->PageNum_ + span->PageNum_ <= SP_PAGE_LEN)
 			{
-				map_.delIndex(leftspan);
+				oldking::PageMap::GetIns().delIndex(leftspan);
 				DelSpanfromSpanLists(leftspan);
 				MergeSpan(span, leftspan, newspanA);
 				span = newspanA;
@@ -97,7 +98,7 @@ void oldking::PageCache::ReleaseSpanToPageCache(oldking::Span* span)
 		{
 			if(rightspan->PageNum_ + span->PageNum_ <= SP_PAGE_LEN)
 			{
-				map_.delIndex(rightspan);
+				oldking::PageMap::GetIns().delIndex(rightspan);
 				DelSpanfromSpanLists(rightspan);
 				MergeSpan(span, rightspan, newspanB);
 				span = newspanB;
@@ -108,7 +109,7 @@ void oldking::PageCache::ReleaseSpanToPageCache(oldking::Span* span)
 
 	// insert span
 	span_lists_[span->PageNum_].push_front(span);
-	map_.newIndex(span);
+	oldking::PageMap::GetIns().newIndex(span);
 	
 	mutex_.Unlock();
 }
@@ -148,6 +149,7 @@ void oldking::PageCache::InitSpan(Span* span, void* PageBegin, uint32_t PageNum)
 	span->ID_ = GetPageID(PageBegin);
 	span->PageBegin_ = PageBegin;
 	span->PageNum_ = PageNum;
+	span->state_ = SpanState::IN_PAGE_CACHE;
 }
 
 void oldking::PageCache::ResetSpan(Span* span)
@@ -158,7 +160,7 @@ void oldking::PageCache::ResetSpan(Span* span)
 	span->objNum_ = 0;
 	span->useCount_ = 0;
 	span->header_ = nullptr;
-	span->isUse_ = false;
+	span->state_ = SpanState::NOT_INIT;
 }
 
 void oldking::PageCache::ClearSpan(Span* span)

@@ -2,6 +2,8 @@
 #include "Utils.hpp"
 #include "common_struct.hpp"
 #include "global.hh"
+#include "PageCache.hh"
+
 #include <cmath>
 
 uint32_t oldking::CentralCache::FetchRangeObj(void*& start, void*& end, uint32_t batch_num, uint32_t size_class)
@@ -25,7 +27,7 @@ uint32_t oldking::CentralCache::FetchRangeObj(void*& start, void*& end, uint32_t
 	end = cur;
 	newspan->header_ = *(void**)cur;
 	newspan->objNum_ -= count;
-	newspan->useCount_ -= count;
+	newspan->useCount_ += count;
 
 	MutexList[SizeClass::table_pos(size_class)].Unlock();
 
@@ -95,8 +97,9 @@ oldking::Span* oldking::CentralCache::GetOneSpan(uint32_t batch_num, uint32_t si
 	// try to get a Span from PageCache
 	else 
 	{
-		Span* newspan = NewSpanfromPageCache(std::ceil(batch_num * size_class / SP_PAGE_LEN));
-
+		Span* newspan = oldking::PageCache::GetInstance().newSpan(std::ceil(batch_num * size_class / SP_PAGE_LEN));
+		InitSpan(newspan, size_class);
+		FT_[SizeClass::table_pos(size_class)].push_front(newspan);
 		return {};
 	}
 }
@@ -122,4 +125,28 @@ void oldking::CentralCache::InsertObj(void* pointer, Span* span)
 
 	span->useCount_ -= 1;
 	span->objNum_ += 1;
+}
+
+void oldking::CentralCache::InitSpan(Span* span, uint32_t ObjSize)
+{
+	span->prevSpan_ = nullptr;
+	span->nextSpan_ = nullptr;
+	span->objSize_ = ObjSize;
+	span->objNum_ = span->PageNum_ * SP_PAGE_LEN / ObjSize;
+	span->useCount_ = 0;
+	span->header_ = nullptr;
+	span->isUse_ = false;
+
+	// cut
+	char* cur = nullptr;
+	for(uint32_t i = 0; i < span->objNum_; i++)
+	{
+		if(cur == nullptr)
+			cur = (char*)span->PageBegin_;
+		else 
+			cur = cur + ObjSize;
+		*(void**)cur = cur + ObjSize;
+	}
+	*(void**)cur = nullptr;
+	span->header_ = span->PageBegin_;
 }

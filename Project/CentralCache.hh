@@ -34,7 +34,7 @@ namespace oldking
 
 		void InsertObj(void* pointer, Span* span);	
 
-		Span* NewSpanfromPageCache(uint32_t PageNum);
+		void InitSpan(Span* span, uint32_t ObjSize);	
 
 	private:
 		SpanList FT_[FT_BUCKET_NUM_TOTAL];	

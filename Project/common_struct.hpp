@@ -83,7 +83,7 @@ namespace oldking
 		, objNum_(0)
 		, useCount_(0)
 		, header_()
-		, isUse_(false)
+		, state_(SpanState::NOT_INIT)
 		{}
 
 		~Span()
@@ -106,7 +106,7 @@ namespace oldking
 
 		void* header_;
 
-		bool isUse_;
+		SpanState state_;
 	};
 
 	class SpanList

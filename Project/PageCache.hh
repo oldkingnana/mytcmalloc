@@ -51,7 +51,6 @@ namespace oldking
 		SpanList span_lists_[PC_BUCKET_NUM];
 		// mymutex mutexlist_[PC_BUCKET_NUM];
 		mymutex mutex_;
-		PageIDSpanMap map_;	
 	};
 }
 

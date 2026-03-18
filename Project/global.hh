@@ -28,6 +28,13 @@ namespace oldking
 	static const uint32_t PC_MMAP_PAGE_NUM_TOTAL = 512 * 1024 * 1024;
 
 	typedef uint64_t PageID;
+
+	enum class SpanState
+	{
+		NOT_INIT = 0,
+		IN_PAGE_CACHE,
+		IN_CENTRAL_CACHE
+	};
 }
 
 
