@@ -64,5 +64,29 @@ namespace oldking
 		
 			return pos;
 		}
+
+		static uint32_t round_up(uint32_t size)
+		{
+			uint32_t time = 0;
+    		uint32_t begin = 1, end = begin + (FT_BUCKET_NUM * (1 << time) * FT_BASE_ALIGNMENT);
+
+    		while(size > 96 && begin < FT_MAX_BLOCK)
+    		{
+    		    time++;
+    		    begin = end;
+    		    end = begin + (FT_BUCKET_NUM * (1 << time) * FT_BASE_ALIGNMENT);
+    		    if(begin <= size && size < end)
+    		            break;
+    		}
+			
+			uint32_t real_size = begin - 1 + ((1 << time) * FT_BASE_ALIGNMENT);
+			while(real_size < size)
+			{
+				real_size += ((1 << time) * FT_BASE_ALIGNMENT);
+				if(real_size > FT_MAX_BLOCK)
+					throw std::bad_alloc();
+			}
+			return real_size;	
+		}
 	};
 }

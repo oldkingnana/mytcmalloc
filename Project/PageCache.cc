@@ -5,6 +5,7 @@
 #include "PageMap.hpp"
 
 #include <cstdint>
+#include <new>
 #include <tuple>
 #include <algorithm>
 #include <sys/mman.h>
@@ -12,6 +13,12 @@
 oldking::Span* oldking::PageCache::newSpan(uint16_t k)
 {
 	mutex_.Lock();
+
+	if(k > PC_SPAN_PAGE_MAX_NUM)
+	{
+		// todo
+		assert(k <= PC_SPAN_PAGE_MAX_NUM);
+	}
 
 	for(uint32_t i = k; i < PC_BUCKET_NUM; i++)
 	{
@@ -33,6 +40,8 @@ oldking::Span* oldking::PageCache::newSpan(uint16_t k)
 				MAP_ANONYMOUS | MAP_PRIVATE,
 				-1,
 				0);
+		if(memory_ == MAP_FAILED)
+			throw std::bad_alloc();
 		Span* newspan = obj_pool_.get();
 		InitSpan(newspan, memory_, PC_SPAN_PAGE_MAX_NUM);
 		span_lists_[newspan->PageNum_].push_front(newspan);
@@ -49,14 +58,18 @@ oldking::Span* oldking::PageCache::newSpan_(uint32_t srcPageNum, uint32_t dstPag
 {
 	Span* span_tmp = span_lists_[srcPageNum].pop_front();
 	if(span_tmp->PageNum_ == dstPageNum)
+	{
+		span_tmp->state_ = SpanState::IN_CENTRAL_CACHE;
 		return span_tmp;
+	}
 	oldking::PageMap::GetIns().delIndex(span_tmp);
-	Span* spanA;
-	Span* spanB;
+	Span* spanA = nullptr;
+	Span* spanB = nullptr;
 	SplitSpan(span_tmp, spanA, spanB, dstPageNum);
 	span_lists_[spanB->PageNum_].push_front(spanB);
 	oldking::PageMap::GetIns().newIndex(spanB);
 	oldking::PageMap::GetIns().newIndex(spanA);
+	spanA->state_ = SpanState::IN_CENTRAL_CACHE;
 	return spanA;
 }
 
@@ -152,7 +165,7 @@ void oldking::PageCache::MergeSpan(Span* srcSpanA, Span* srcSpanB, Span*& dstSpa
 
 void oldking::PageCache::InitSpan(Span* span, void* PageBegin, uint32_t PageNum)
 {
-	span->ID_ = GetPageID(PageBegin);
+	span->ID_ = PageMap::GetIns().PointerToPageID(PageBegin);
 	span->PageBegin_ = PageBegin;
 	span->PageNum_ = PageNum;
 	span->state_ = SpanState::IN_PAGE_CACHE;

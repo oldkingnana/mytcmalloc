@@ -3,6 +3,7 @@
 #include "common_struct.hpp"
 #include "global.hh"
 #include "PageCache.hh"
+#include "PageMap.hpp"
 
 #include <cmath>
 
@@ -26,6 +27,7 @@ uint32_t oldking::CentralCache::FetchRangeObj(void*& start, void*& end, uint32_t
 
 	end = cur;
 	newspan->header_ = *(void**)cur;
+	*(void**)end = nullptr;
 	newspan->objNum_ -= count;
 	newspan->useCount_ += count;
 
@@ -40,37 +42,33 @@ void oldking::CentralCache::ReleaseListToSpans(void* start, uint32_t batch_num, 
 	assert(batch_num != 0);
 	assert(size_class != 0);
 
-	uint32_t count = 0;
-	void* cur_obj = nullptr;
-	void* next = nullptr;
-	
 	Span* span = nullptr;
 	
 	MutexList[SizeClass::table_pos(size_class)].Lock();
 
-	for(; count < batch_num; count++)
+	void* cur_obj = start;
+	for(uint32_t count = 0; count < batch_num; count++)
 	{
-		if(cur_obj == nullptr)
+		void* next = *(void**)cur_obj;
+
+		if(span == nullptr || span->ID_ != PageMap::GetIns().PointerToPageID(cur_obj))
+			span = PageMap::GetIns().PointerToSpan(cur_obj);
+		
+		InsertObj(cur_obj, span);
+
+		// release span to PageCache
+		if(span->useCount_ == 0)
 		{
-			cur_obj = start;
-			next = *(void**)start;
-		}
-		else
-		{
-			cur_obj = next;
-			next = *(void**)next;
+			FT_[SizeClass::table_pos(size_class)].erase(span);
+			span->objNum_ = 0;
+			span->objSize_ = 0;
+			span->header_ = nullptr;
+
+			PageCache::GetInstance().ReleaseSpanToPageCache(span);
+			span = nullptr;
 		}
 
-		if(span == nullptr)
-			span = FindSpan(cur_obj, size_class);
-		
-		if(span->ID_ == PageIDSpanMap::PointerToPageID(cur_obj))
-			InsertObj(cur_obj, span);
-		else 
-		{
-			span = FindSpan(cur_obj, size_class);
-			InsertObj(cur_obj, span);
-		}
+		cur_obj = next;
 	}
 	
 	MutexList[SizeClass::table_pos(size_class)].Unlock();
@@ -87,41 +85,27 @@ oldking::Span* oldking::CentralCache::GetOneSpan(uint32_t batch_num, uint32_t si
 		if(max_span == nullptr)
 			max_span = it;
 
-		if(max_span->objSize_ > it->objSize_)
+		if(max_span->objNum_ < it->objNum_)
 			max_span = it;
 	}
 	
 	// try to get a Span from FreeTable
-	if(max_span->objSize_ >= batch_num / 3)
+	if(max_span != nullptr && max_span->objNum_ > 0)
 		return max_span;
 	// try to get a Span from PageCache
 	else 
 	{
-		Span* newspan = oldking::PageCache::GetInstance().newSpan(std::ceil(batch_num * size_class / SP_PAGE_LEN));
+		Span* newspan = oldking::PageCache::GetInstance().newSpan((batch_num * size_class + SP_PAGE_LEN - 1) >> SP_PAGE_SHIFT); // good design
 		InitSpan(newspan, size_class);
 		FT_[SizeClass::table_pos(size_class)].push_front(newspan);
-		return {};
+		return newspan;
 	}
-}
-		
-oldking::Span* oldking::CentralCache::FindSpan(void* pointer, uint32_t size_class)
-{
-	auto pos = SizeClass::table_pos(size_class);
-	Span* cur_span = FT_[pos].begin();
-	while(cur_span != FT_[pos].end())
-	{
-		if(cur_span->ID_ == PageIDSpanMap::PointerToPageID(pointer))
-			break;
-	}
-	return cur_span;
 }
 
 void oldking::CentralCache::InsertObj(void* pointer, Span* span)
 {
-	void* header = span->header_;
-
-	*(void**)pointer = header;
-	header = pointer;
+	*(void**)pointer = span->header_;
+	span->header_ = pointer;
 
 	span->useCount_ -= 1;
 	span->objNum_ += 1;
@@ -135,18 +119,15 @@ void oldking::CentralCache::InitSpan(Span* span, uint32_t ObjSize)
 	span->objNum_ = span->PageNum_ * SP_PAGE_LEN / ObjSize;
 	span->useCount_ = 0;
 	span->header_ = nullptr;
-	span->isUse_ = false;
+	span->state_ = SpanState::IN_CENTRAL_CACHE;
 
 	// cut
-	char* cur = nullptr;
-	for(uint32_t i = 0; i < span->objNum_; i++)
+	char* cur = (char*)span->PageBegin_;
+	span->header_ = cur;
+	for(uint32_t i = 0; i < span->objNum_ - 1; i++)
 	{
-		if(cur == nullptr)
-			cur = (char*)span->PageBegin_;
-		else 
-			cur = cur + ObjSize;
 		*(void**)cur = cur + ObjSize;
+		cur += ObjSize;
 	}
 	*(void**)cur = nullptr;
-	span->header_ = span->PageBegin_;
 }

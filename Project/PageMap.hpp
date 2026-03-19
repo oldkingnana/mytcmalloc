@@ -26,33 +26,28 @@ namespace oldking
 
 		static PageID PointerToPageID(void* pointer)
 		{
-			return (uint64_t)pointer >> 12;	
+			return (uint64_t)pointer >> SP_PAGE_SHIFT;	
 		}
 
 		Span* PointerToSpan(void* pointer)
 		{
 			assert(pointer);
 			mutex_.Lock();
+			Span* ret = nullptr;
 			if(map_.find(PointerToPageID(pointer)) != map_.end())
-			{
-				mutex_.Unlock();
-				return map_[PointerToPageID(pointer)];
-			}
-			else
-			{
-				mutex_.Unlock();
-				return nullptr;
-			}
+				ret = map_[PointerToPageID(pointer)];
+			mutex_.Unlock();
+			return ret;
 		}
 
 		Span* PageIDToSpan(PageID id)
 		{
 			mutex_.Lock();
+			Span* ret = nullptr;
 			if(map_.find(id) != map_.end())
-				return map_[id];
-			else 
-				return nullptr;
+				ret = map_[id];
 			mutex_.Unlock();
+			return ret;
 		}
 
 		void newIndex(Span* span)
@@ -79,6 +74,8 @@ namespace oldking
 		void delIndex(PageID id)
 		{
 			mutex_.Lock();
+			if(map_.find(id) == map_.end())
+				return ;
 			auto beginid = map_[id]->ID_;
 			auto pagenum = map_[id]->PageNum_;
 

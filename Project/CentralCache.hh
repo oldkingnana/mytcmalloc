@@ -29,11 +29,7 @@ namespace oldking
 
 	private:
 		Span* GetOneSpan(uint32_t batch_num, uint32_t size_class);
-
-		Span* FindSpan(void* pointer, uint32_t size_class);
-
 		void InsertObj(void* pointer, Span* span);	
-
 		void InitSpan(Span* span, uint32_t ObjSize);	
 
 	private:

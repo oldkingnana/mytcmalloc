@@ -195,7 +195,7 @@ namespace oldking
 			span->prevSpan_ = nullptr;
 		}
 
-		bool is_empty() { return header_->nextSpan_ == nullptr; }
+		bool is_empty() { return header_->nextSpan_ == header_; }
 
 	private:
 		Span* header_;

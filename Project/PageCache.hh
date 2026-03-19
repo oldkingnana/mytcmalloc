@@ -32,7 +32,6 @@ namespace oldking
 		Span* newSpan(uint16_t k);
 
 		void ReleaseSpanToPageCache(Span* span);
-		static PageID GetPageID(void* pointer);
 
 	private:
 		void SplitSpan(Span* srcSpan, Span*& dstSpanA, Span*& dstSpanB, uint32_t SpanAPageNum);

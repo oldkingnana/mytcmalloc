@@ -2,6 +2,7 @@
 #include "ThreadCache.hh"
 #include <new>
 #include "myexception.hpp"
+#include "PageMap.hpp"
 
 void* oldking::alloc(uint32_t size)
 {
@@ -18,7 +19,7 @@ void* oldking::alloc(uint32_t size)
 	return ret;
 }
 
-void oldking::dealloc(void* obj, uint32_t size)
+void oldking::dealloc(void* obj)
 {
 	if(oldking::pthreadcache == nullptr)
 	{
@@ -26,7 +27,7 @@ void oldking::dealloc(void* obj, uint32_t size)
 		throw ex;
 	}
 
-	if(!oldking::pthreadcache->deallocate(obj, size))
+	if(!oldking::pthreadcache->deallocate(obj, PageMap::GetIns().PointerToSpan(obj)->objSize_))
 	{
 		oldking::my_exception ex("dealloc -> bad dealloc");
 		throw ex;

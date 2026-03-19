@@ -16,7 +16,8 @@ namespace oldking
 	static const uint32_t FT_BUCKET_NUM_TOTAL = 12*12;  // after every 12 buckets, the alignment will double
 	
 	// =====================Span==============================
-	static const uint32_t SP_PAGE_LEN = 4 * 1024;
+	static const uint32_t SP_PAGE_SHIFT = 12;
+	static const uint32_t SP_PAGE_LEN = 1 << SP_PAGE_SHIFT;
 
 	// ==================ObjectPool=============================
 	static const uint32_t OP_INIT_NUM = 32;

@@ -9,9 +9,6 @@
 #include <sys/mman.h>
 #include <pthread.h>
 
-
-// #include <unordered_map>
-
 namespace oldking
 {
 
@@ -26,10 +23,7 @@ namespace oldking
 	class ThreadCache
 	{
 	public:
-		typedef void* pfree_list;
-		
 		ThreadCache()
-		// : free_size_(0)
 		{}
 
 		~ThreadCache()
@@ -39,16 +33,8 @@ namespace oldking
 
 		bool deallocate(void* obj, uint32_t size);
 
-		//uint32_t FreeSize()
-		//{
-		//	return free_size_;
-		//}
-
-		bool get_span(oldking::CentralCache* pCC, uint32_t size);
-
 	private:
 		FreeList FT_[FT_BUCKET_NUM_TOTAL];
-		// uint32_t free_size_;
 	};
 
 	static __thread ThreadCache* pthreadcache = nullptr;	
